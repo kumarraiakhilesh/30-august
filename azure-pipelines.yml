@@ -1,33 +1,33 @@
-# 1. ट्रिगर: जब main ब्रांच में कोड पुश/मर्ज हो
 trigger:
 - main
+- feature/*
 
-# 2. PR ट्रिगर: जब भी कोई main के लिए Pull Request बनाएगा, तब यह चेकर चलेगा
 pr:
 - main
 
-# 3. आपका Self-Hosted Agent कॉन्फ़िगरेशन
 pool:
+<<<<<<< HEAD
   name: 'Default'                     # आपका Agent Pool नाम
+=======
+  name: 'akhileshrai'                     # आपका Agent Pool
+>>>>>>> 23a0880676c8485ddf6ab266900890bdd0991816
   demands:
-  - Agent.Name -equals akhileshraiagent   # आपका विशिष्ट Agent नाम
+  - Agent.Name -equals akhileshraiagent   # आपका Agent
 
-# 4. वैरिएबल्स (ताकि कोड साफ़ और मैनेज करने में आसान रहे)
 variables:
-  # अगर आपकी .tf फाइलें किसी सब-फोल्डर (जैसे Env/Dev) में हैं, तो पाथ वैसा सेट करें
-  workingDir: '$(System.DefaultWorkingDirectory)' 
-  serviceArm: 'akhilesh25'
+  workingDir: '$(System.DefaultWorkingDirectory)'
+  serviceArm: 'sept7'                     # आपका Service Connection नाम
   backendRG: 'akhileshtestpip2'
   backendSA: 'akhileshstoragepip2'
   backendContainer: 'akhileshcanttest'
   backendKey: 'pipe.tfstate'
 
 steps:
-# -------------------------------------------------------------
-# 1. Terraform Init (रिमोट बैकएंड के साथ)
-# -------------------------------------------------------------
+# =============================================================
+# 1. TERRAFORM INIT
+# =============================================================
 - task: TerraformTask@5
-  displayName: 'Terraform Init'
+  displayName: '1. Terraform Init'
   inputs:
     provider: 'azurerm'
     command: 'init'
@@ -38,33 +38,89 @@ steps:
     backendAzureRmContainerName: $(backendContainer)
     backendAzureRmKey: $(backendKey)
 
-# -------------------------------------------------------------
-# 2. Terraform Validate (सिंटैक्स चेक करने के लिए)
-# -------------------------------------------------------------
+# =============================================================
+# 2. TERRAFORM VALIDATE
+# =============================================================
 - task: TerraformTask@5
-  displayName: 'Terraform Validate'
+  displayName: '2. Terraform Validate'
   inputs:
     provider: 'azurerm'
     command: 'validate'
     workingDirectory: $(workingDir)
     environmentServiceNameAzureRM: $(serviceArm)
 
-# -------------------------------------------------------------
-# 3. Terraform Plan (PR और Checker के समय बदलाव देखने के लिए)
-# -------------------------------------------------------------
+# =============================================================
+# 3. SCANNING TOOLS (Security & Code Quality)
+# =============================================================
+
+# Tool 1: TFLint (Terraform Linter)
+- task: PowerShell@2
+  displayName: '3.1 Scan: TFLint'
+  continueOnError: true
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Running TFLint..."
+      cd $(workingDir)
+      tflint --init
+      tflint
+
+# Tool 2: Checkov (IaC Static Code Security Scanner)
+- task: PowerShell@2
+  displayName: '3.2 Scan: Checkov'
+  continueOnError: true
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Running Checkov Scanner..."
+      checkov -d $(workingDir) --framework terraform --compact
+
+# Tool 3: TFSec (Terraform Security Scanner)
+- task: PowerShell@2
+  displayName: '3.3 Scan: TFSec'
+  continueOnError: true
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Running TFSec..."
+      tfsec $(workingDir)
+
+# Tool 4: Gitleaks (Detect Hardcoded Secrets in Git)
+- task: PowerShell@2
+  displayName: '3.4 Scan: Gitleaks'
+  continueOnError: true
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Running Gitleaks..."
+      gitleaks detect --source="$(System.DefaultWorkingDirectory)" --verbose
+
+# Tool 5: TruffleHog (Find Leaked API Keys / Secrets)
+- task: PowerShell@2
+  displayName: '3.5 Scan: TruffleHog'
+  continueOnError: true
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Running TruffleHog..."
+      trufflehog filesystem $(workingDir) --no-update
+
+# =============================================================
+# 4. TERRAFORM PLAN (स्कैनिंग पूरी होने के बाद)
+# =============================================================
 - task: TerraformTask@5
-  displayName: 'Terraform Plan'
+  displayName: '4. Terraform Plan'
   inputs:
     provider: 'azurerm'
     command: 'plan'
     workingDirectory: $(workingDir)
     environmentServiceNameAzureRM: $(serviceArm)
 
-# -------------------------------------------------------------
-# 4. Terraform Apply (यह केवल तभी चलेगा जब कोड main में मर्ज होगा)
-# -------------------------------------------------------------
+# =============================================================
+# 5. TERRAFORM APPLY (केवल तभी चलेगा जब कोड main में मर्ज होगा)
+# =============================================================
 - task: TerraformTask@5
-  displayName: 'Terraform Apply'
+  displayName: '5. Terraform Apply'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   inputs:
     provider: 'azurerm'
