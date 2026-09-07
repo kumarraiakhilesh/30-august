@@ -8,7 +8,7 @@ pr:
 
 # 3. आपका Self-Hosted Agent कॉन्फ़िगरेशन
 pool:
-  name: 'akhileshrai'                     # आपका Agent Pool नाम
+  name: 'Default'                     # आपका Agent Pool नाम
   demands:
   - Agent.Name -equals akhileshraiagent   # आपका विशिष्ट Agent नाम
 
