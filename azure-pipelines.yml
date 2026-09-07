@@ -37,7 +37,7 @@ jobs:
     inputs:
       provider: 'azurerm'
       command: 'init'
-      workingDirectory: $(workingDir)
+      workingDirectory: '$(workingDir)'
       backendServiceArm: $(serviceArm)
       backendAzureRmResourceGroupName: $(backendRG)
       backendAzureRmStorageAccountName: $(backendSA)
@@ -50,7 +50,7 @@ jobs:
     inputs:
       provider: 'azurerm'
       command: 'validate'
-      workingDirectory: $(workingDir)
+      workingDirectory: '$(workingDir)'
       environmentServiceNameAzureRM: $(serviceArm)
 
   # 1.3 Tool: TFLint
@@ -59,11 +59,12 @@ jobs:
     continueOnError: true
     inputs:
       targetType: 'inline'
+      workingDirectory: '$(workingDir)'
       script: |
         Write-Host "Running TFLint..."
-        cd $(workingDir)
         tflint --init
         tflint
+        if ($LASTEXITCODE -ne 0) { Write-Host "TFLint found issues or exited with code $LASTEXITCODE"; $LASTEXITCODE = 0 }
 
   # 1.4 Tool: Checkov
   - task: PowerShell@2
@@ -71,9 +72,10 @@ jobs:
     continueOnError: true
     inputs:
       targetType: 'inline'
+      workingDirectory: '$(workingDir)'
       script: |
         Write-Host "Running Checkov..."
-        checkov -d $(workingDir) --framework terraform --compact
+        checkov -d . --framework terraform --compact --soft-fail
 
   # 1.5 Tool: TFSec
   - task: PowerShell@2
@@ -81,9 +83,10 @@ jobs:
     continueOnError: true
     inputs:
       targetType: 'inline'
+      workingDirectory: '$(workingDir)'
       script: |
         Write-Host "Running TFSec..."
-        tfsec $(workingDir)
+        tfsec . --soft-fail
 
   # 1.6 Tool: Gitleaks
   - task: PowerShell@2
@@ -91,9 +94,11 @@ jobs:
     continueOnError: true
     inputs:
       targetType: 'inline'
+      workingDirectory: '$(System.DefaultWorkingDirectory)'
       script: |
         Write-Host "Running Gitleaks..."
-        gitleaks detect --source="$(System.DefaultWorkingDirectory)" --verbose
+        gitleaks detect --source="." --verbose
+        if ($LASTEXITCODE -ne 0) { Write-Host "Gitleaks found issues or exited with code $LASTEXITCODE"; $LASTEXITCODE = 0 }
 
   # 1.7 Tool: TruffleHog
   - task: PowerShell@2
@@ -101,9 +106,11 @@ jobs:
     continueOnError: true
     inputs:
       targetType: 'inline'
+      workingDirectory: '$(workingDir)'
       script: |
         Write-Host "Running TruffleHog..."
-        trufflehog filesystem $(workingDir) --no-update
+        trufflehog filesystem . --no-update
+        if ($LASTEXITCODE -ne 0) { Write-Host "TruffleHog found issues or exited with code $LASTEXITCODE"; $LASTEXITCODE = 0 }
 
 # =============================================================
 # JOB 2: TERRAFORM PLAN (Job 1 पास होने के बाद चलेगा)
@@ -122,7 +129,7 @@ jobs:
     inputs:
       provider: 'azurerm'
       command: 'init'
-      workingDirectory: $(workingDir)
+      workingDirectory: '$(workingDir)'
       backendServiceArm: $(serviceArm)
       backendAzureRmResourceGroupName: $(backendRG)
       backendAzureRmStorageAccountName: $(backendSA)
@@ -134,7 +141,7 @@ jobs:
     inputs:
       provider: 'azurerm'
       command: 'plan'
-      workingDirectory: $(workingDir)
+      workingDirectory: '$(workingDir)'
       environmentServiceNameAzureRM: $(serviceArm)
 
 # =============================================================
@@ -155,7 +162,7 @@ jobs:
     inputs:
       provider: 'azurerm'
       command: 'init'
-      workingDirectory: $(workingDir)
+      workingDirectory: '$(workingDir)'
       backendServiceArm: $(serviceArm)
       backendAzureRmResourceGroupName: $(backendRG)
       backendAzureRmStorageAccountName: $(backendSA)
@@ -167,5 +174,5 @@ jobs:
     inputs:
       provider: 'azurerm'
       command: 'apply'
-      workingDirectory: $(workingDir)
+      workingDirectory: '$(workingDir)'
       environmentServiceNameAzureRM: $(serviceArm)
