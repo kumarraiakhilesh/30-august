@@ -7,9 +7,9 @@ pr:
 
 pool:
 <<<<<<< HEAD
-  name: 'Default'                     # आपका Agent Pool नाम
+  name: 'Sept7'                     # आपका Agent Pool नाम
 =======
-  name: 'akhileshrai'                     # आपका Agent Pool
+  name: 'Sept7agent'                     # आपका Agent Pool
 >>>>>>> 23a0880676c8485ddf6ab266900890bdd0991816
   demands:
   - Agent.Name -equals akhileshraiagent   # आपका Agent
