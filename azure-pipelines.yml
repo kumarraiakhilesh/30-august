@@ -25,6 +25,12 @@ jobs:
 - job: SecurityAndValidation
   displayName: '1. Validation & Security Scans'
   steps:
+  # 1.0 Install Terraform
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: 'latest'
+
   # 1.1 Terraform Init
   - task: TerraformTask@5
     displayName: 'Terraform Init'
@@ -106,6 +112,11 @@ jobs:
   displayName: '2. Terraform Plan'
   dependsOn: SecurityAndValidation
   steps:
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: 'latest'
+
   - task: TerraformTask@5
     displayName: 'Terraform Init for Plan'
     inputs:
@@ -134,6 +145,11 @@ jobs:
   dependsOn: TerraformPlan
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   steps:
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: 'latest'
+
   - task: TerraformTask@5
     displayName: 'Terraform Init for Apply'
     inputs:
