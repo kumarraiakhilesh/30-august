@@ -1,0 +1,73 @@
+# 1. ट्रिगर: जब main ब्रांच में कोड पुश/मर्ज हो
+trigger:
+- main
+
+# 2. PR ट्रिगर: जब भी कोई main के लिए Pull Request बनाएगा, तब यह चेकर चलेगा
+pr:
+- main
+
+# 3. आपका Self-Hosted Agent कॉन्फ़िगरेशन
+pool:
+  name: 'akhileshrai'                     # आपका Agent Pool नाम
+  demands:
+  - Agent.Name -equals akhileshraiagent   # आपका विशिष्ट Agent नाम
+
+# 4. वैरिएबल्स (ताकि कोड साफ़ और मैनेज करने में आसान रहे)
+variables:
+  # अगर आपकी .tf फाइलें किसी सब-फोल्डर (जैसे Env/Dev) में हैं, तो पाथ वैसा सेट करें
+  workingDir: '$(System.DefaultWorkingDirectory)' 
+  serviceArm: 'akhilesh25'
+  backendRG: 'akhileshtestpip2'
+  backendSA: 'akhileshstoragepip2'
+  backendContainer: 'akhileshcanttest'
+  backendKey: 'pipe.tfstate'
+
+steps:
+# -------------------------------------------------------------
+# 1. Terraform Init (रिमोट बैकएंड के साथ)
+# -------------------------------------------------------------
+- task: TerraformTask@5
+  displayName: 'Terraform Init'
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: $(workingDir)
+    backendServiceArm: $(serviceArm)
+    backendAzureRmResourceGroupName: $(backendRG)
+    backendAzureRmStorageAccountName: $(backendSA)
+    backendAzureRmContainerName: $(backendContainer)
+    backendAzureRmKey: $(backendKey)
+
+# -------------------------------------------------------------
+# 2. Terraform Validate (सिंटैक्स चेक करने के लिए)
+# -------------------------------------------------------------
+- task: TerraformTask@5
+  displayName: 'Terraform Validate'
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: $(workingDir)
+    environmentServiceNameAzureRM: $(serviceArm)
+
+# -------------------------------------------------------------
+# 3. Terraform Plan (PR और Checker के समय बदलाव देखने के लिए)
+# -------------------------------------------------------------
+- task: TerraformTask@5
+  displayName: 'Terraform Plan'
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: $(workingDir)
+    environmentServiceNameAzureRM: $(serviceArm)
+
+# -------------------------------------------------------------
+# 4. Terraform Apply (यह केवल तभी चलेगा जब कोड main में मर्ज होगा)
+# -------------------------------------------------------------
+- task: TerraformTask@5
+  displayName: 'Terraform Apply'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: $(workingDir)
+    environmentServiceNameAzureRM: $(serviceArm)
