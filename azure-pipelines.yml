@@ -16,7 +16,7 @@ pool:
 variables:
   # अगर आपकी .tf फाइलें किसी सब-फोल्डर (जैसे Env/Dev) में हैं, तो पाथ वैसा सेट करें
   workingDir: '$(System.DefaultWorkingDirectory)' 
-  serviceArm: 'akhilesh25'
+  serviceArm: 'sept07'
   backendRG: 'akhileshtestpip2'
   backendSA: 'akhileshstoragepip2'
   backendContainer: 'akhileshcanttest'
