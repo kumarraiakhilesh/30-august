@@ -11,7 +11,7 @@ pool:
   - Agent.Name -equals Sept7agent
 
 variables:
-  workingDir: '$(System.DefaultWorkingDirectory)'
+  workingDir: '$(System.DefaultWorkingDirectory)/Env/Dev'
   serviceArm: 'sept7'
   backendRG: 'akhileshtestpip2'
   backendSA: 'akhileshstoragepip2'
